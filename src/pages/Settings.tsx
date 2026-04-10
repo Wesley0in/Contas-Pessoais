@@ -8,7 +8,7 @@ import { Layout } from "@/components/Layout";
 import { useSettings, useUpdateSettings } from "@/hooks/useFinanceData";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle, AlertCircle, Loader2, Cpu, Table, ShieldCheck, Database } from "lucide-react";
+import { CheckCircle, AlertCircle, Loader2, Cpu, Table, ShieldCheck, Database, History, RefreshCcw } from "lucide-react";
 
 export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
@@ -22,6 +22,7 @@ export default function SettingsPage() {
   
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -88,6 +89,26 @@ export default function SettingsPage() {
       toast.error("Falha na conexão com a planilha. Verifique o ID e as permissões.");
     } finally {
       setIsTesting(false);
+    }
+  };
+
+  const handleSyncHistory = async () => {
+    const confirmSync = window.confirm(
+      "Isso irá apagar os dados atuais do App para o ano de " + referenceYear + 
+      " e substituir pelos valores totais da planilha. Deseja continuar?"
+    );
+    
+    if (!confirmSync) return;
+
+    setIsSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("import-sheets");
+      if (error) throw error;
+      toast.success(`Sincronização concluída! ${data.count} categorias importadas.`);
+    } catch (err: any) {
+      toast.error("Erro na sincronização: " + (err.message || "Tente novamente mais tarde."));
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -232,24 +253,40 @@ export default function SettingsPage() {
               )}
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-4 pt-4 border-t">
-              <Button onClick={handleSaveSpreadsheet} className="bg-indigo-600 hover:bg-indigo-700">
-                Salvar Planilha
-              </Button>
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 pt-4 border-t items-center justify-between">
+              <div className="flex gap-3 w-full sm:w-auto">
+                <Button onClick={handleSaveSpreadsheet} className="bg-indigo-600 hover:bg-indigo-700">
+                  Salvar Planilha
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleTest} 
+                  disabled={isTesting}
+                  className="border-indigo-200"
+                >
+                  {isTesting ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : testResult === "success" ? (
+                    <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                  ) : testResult === "error" ? (
+                    <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
+                  ) : null}
+                  Testar Conexão
+                </Button>
+              </div>
+
               <Button 
-                variant="outline" 
-                onClick={handleTest} 
-                disabled={isTesting}
-                className="border-indigo-200"
+                variant="secondary" 
+                onClick={handleSyncHistory} 
+                disabled={isSyncing}
+                className="w-full sm:w-auto bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
               >
-                {isTesting ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : testResult === "success" ? (
-                  <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
-                ) : testResult === "error" ? (
-                  <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
-                ) : null}
-                Testar Conexão
+                {isSyncing ? (
+                  <RefreshCcw className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <History className="w-4 h-4 mr-2" />
+                )}
+                Sincronizar do Google
               </Button>
             </div>
           </CardContent>
