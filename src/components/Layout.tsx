@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   PlusCircle,
@@ -9,6 +9,7 @@ import {
   Menu,
   X,
   DollarSign,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,12 @@ const navItems = [
 export function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("authenticated");
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen flex">
@@ -75,6 +82,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
+
+        <div className="mt-auto p-4 border-t border-sidebar-accent/30">
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive transition-colors"
+            onClick={handleLogout}
+          >
+            <LogOut className="w-5 h-5" />
+            Sair
+          </Button>
+        </div>
 
         <div className="p-4 text-xs text-sidebar-foreground/40">
           © 2026 FinançasPessoais

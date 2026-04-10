@@ -3,11 +3,13 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import NewTransaction from "./pages/NewTransaction";
 import ScannerPage from "./pages/Scanner";
 import HistoryPage from "./pages/History";
 import SettingsPage from "./pages/Settings";
+import LoginPage from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -19,11 +21,47 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/nova-transacao" element={<NewTransaction />} />
-          <Route path="/escanear" element={<ScannerPage />} />
-          <Route path="/historico" element={<HistoryPage />} />
-          <Route path="/configuracoes" element={<SettingsPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/nova-transacao"
+            element={
+              <ProtectedRoute>
+                <NewTransaction />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/escanear"
+            element={
+              <ProtectedRoute>
+                <ScannerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/historico"
+            element={
+              <ProtectedRoute>
+                <HistoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/configuracoes"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
