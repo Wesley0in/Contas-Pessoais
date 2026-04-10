@@ -84,7 +84,13 @@ serve(async (req) => {
     });
 
     if (!res.ok) {
-      throw new Error(`Sheets API error [${res.status}]: ${await res.text()}`);
+      if (res.status === 403) {
+        throw new Error("Permissão Negada: Você esqueceu de compartilhar a planilha com o e-mail da Service Account como 'Editor'?");
+      }
+      if (res.status === 404) {
+        throw new Error("Planilha não encontrada: Verifique se o ID ou o Link da planilha estão corretos.");
+      }
+      throw new Error(`Erro na API do Google [${res.status}]: ${await res.text()}`);
     }
 
     const data = await res.json();

@@ -32,9 +32,29 @@ export default function SettingsPage() {
     }
   }, [settings]);
 
+  const extractIdFromUrl = (input: string) => {
+    // Regular expression to match Google Sheets ID
+    const match = input.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    if (match && match[1]) {
+      setSpreadsheetId(match[1]);
+      toast.info("ID extraído do link com sucesso!");
+      return;
+    }
+    setSpreadsheetId(input);
+  };
+
   const handleSaveSystem = () => {
     localStorage.setItem("GROQ_API_KEY", groqApiKey);
     toast.success("Configurações do sistema salvas localmente!");
+  };
+
+  const getServiceAccountEmail = () => {
+    try {
+      const parsed = JSON.parse(serviceAccountJson);
+      return parsed.client_email || null;
+    } catch {
+      return null;
+    }
   };
 
   const handleSaveSpreadsheet = async () => {
@@ -142,15 +162,15 @@ export default function SettingsPage() {
                    <div className="relative flex-1">
                     <Database className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Ex: 1BxiMVs0XRA5nFMdKvBdBZjgm..."
+                      placeholder="Cole o link da sua planilha ou o ID aqui"
                       value={spreadsheetId}
-                      onChange={(e) => setSpreadsheetId(e.target.value)}
+                      onChange={(e) => extractIdFromUrl(e.target.value)}
                       className="pl-10"
                     />
                   </div>
                 </div>
                 <p className="text-[10px] text-muted-foreground px-1">
-                  ID extraído da URL: docs.google.com/spreadsheets/d/<strong>ID_AQUI</strong>/edit
+                  Você pode colar o <strong>link completo</strong> da planilha e eu extraio o ID para você.
                 </p>
               </div>
 
@@ -183,8 +203,24 @@ export default function SettingsPage() {
                 className="font-mono text-xs bg-muted/30"
               />
               <p className="text-[10px] text-muted-foreground">
-                Dica: O e-mail da service account deve ter permissão de <strong>Editor</strong> na sua planilha.
+                Dica: O e-mail da service account abaixo deve ter permissão de <strong>Editor</strong> na sua planilha.
               </p>
+              {getServiceAccountEmail() && (
+                <div className="mt-2 p-2 bg-muted rounded border border-dashed flex items-center justify-between gap-2 overflow-hidden">
+                  <span className="text-xs font-mono truncate select-all">{getServiceAccountEmail()}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="xs" 
+                    onClick={() => {
+                      navigator.clipboard.writeText(getServiceAccountEmail()!);
+                      toast.success("E-mail copiado!");
+                    }}
+                    className="h-6 text-[10px]"
+                  >
+                    Copiar
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 pt-4 pt-4 border-t">
