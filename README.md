@@ -1,3 +1,3 @@
-# Welcome to your Lovable project
+# Finanças Pessoais
 
 TODO: Document your project here

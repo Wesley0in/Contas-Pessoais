@@ -34,7 +34,7 @@ export default function ScannerPage() {
       });
 
       const { data, error } = await supabase.functions.invoke("ocr", {
-        body: { image: base64 },
+        body: { image: base64, groqApiKey: localStorage.getItem("GROQ_API_KEY") },
       });
 
       if (error) throw error;

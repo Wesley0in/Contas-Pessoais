@@ -21,6 +21,7 @@ export default function SettingsPage() {
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [groqApiKey, setGroqApiKey] = useState(localStorage.getItem("GROQ_API_KEY") || "");
 
   // Load settings when available
   if (settings && !loaded) {
@@ -41,6 +42,7 @@ export default function SettingsPage() {
         service_account_json: serviceAccountJson,
         reference_year: referenceYear,
       });
+      localStorage.setItem("GROQ_API_KEY", groqApiKey);
       toast.success("Configurações salvas!");
     } catch {
       toast.error("Erro ao salvar.");
@@ -94,6 +96,19 @@ export default function SettingsPage() {
               />
               <p className="text-xs text-muted-foreground">
                 Extraído da URL: docs.google.com/spreadsheets/d/<strong>ID_AQUI</strong>/edit
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Chave API do Groq (Acelera OCR)</Label>
+              <Input
+                type="password"
+                placeholder="gsk_..."
+                value={groqApiKey}
+                onChange={(e) => setGroqApiKey(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Informe sua chave do Groq para ler notas sem erro.
               </p>
             </div>
 
