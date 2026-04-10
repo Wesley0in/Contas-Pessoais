@@ -205,20 +205,29 @@ export default function SettingsPage() {
               <p className="text-[10px] text-muted-foreground">
                 Dica: O e-mail da service account abaixo deve ter permissão de <strong>Editor</strong> na sua planilha.
               </p>
-              {getServiceAccountEmail() && (
-                <div className="mt-2 p-2 bg-muted rounded border border-dashed flex items-center justify-between gap-2 overflow-hidden">
-                  <span className="text-xs font-mono truncate select-all">{getServiceAccountEmail()}</span>
+              {getServiceAccountEmail() ? (
+                <div className="mt-2 p-3 bg-primary/5 rounded-lg border border-primary/20 flex items-center justify-between gap-2 animate-in fade-in slide-in-from-top-1">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase font-bold text-primary/60 tracking-wider">E-mail para compartilhar:</span>
+                    <span className="text-xs font-mono font-medium truncate select-all">{getServiceAccountEmail()}</span>
+                  </div>
                   <Button 
-                    variant="ghost" 
-                    size="xs" 
+                    variant="outline" 
+                    size="sm" 
                     onClick={() => {
                       navigator.clipboard.writeText(getServiceAccountEmail()!);
                       toast.success("E-mail copiado!");
                     }}
-                    className="h-6 text-[10px]"
+                    className="h-8 px-3 text-xs bg-white"
                   >
                     Copiar
                   </Button>
+                </div>
+              ) : (
+                <div className="mt-2 p-3 bg-muted/50 rounded-lg border border-dashed border-muted-foreground/20 text-center">
+                  <p className="text-[10px] text-muted-foreground italic">
+                    Cole o conteúdo do seu arquivo JSON acima para visualizar o e-mail de compartilhamento.
+                  </p>
                 </div>
               )}
             </div>
