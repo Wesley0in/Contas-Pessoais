@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { Layout } from "@/components/Layout";
 import { useSettings, useUpdateSettings } from "@/hooks/useFinanceData";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { CheckCircle, AlertCircle, Loader2, Cpu, Table, ShieldCheck, Database } from "lucide-react";
 
 export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
@@ -18,21 +18,26 @@ export default function SettingsPage() {
   const [sheetName, setSheetName] = useState("");
   const [serviceAccountJson, setServiceAccountJson] = useState("");
   const [referenceYear, setReferenceYear] = useState(2026);
+  const [groqApiKey, setGroqApiKey] = useState(localStorage.getItem("GROQ_API_KEY") || "");
+  
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
-  const [loaded, setLoaded] = useState(false);
-  const [groqApiKey, setGroqApiKey] = useState(localStorage.getItem("GROQ_API_KEY") || "");
 
-  // Load settings when available
-  if (settings && !loaded) {
-    setSpreadsheetId(settings.spreadsheet_id);
-    setSheetName(settings.sheet_name);
-    setServiceAccountJson(settings.service_account_json);
-    setReferenceYear(settings.reference_year);
-    setLoaded(true);
-  }
+  useEffect(() => {
+    if (settings) {
+      setSpreadsheetId(settings.spreadsheet_id || "");
+      setSheetName(settings.sheet_name || "");
+      setServiceAccountJson(settings.service_account_json || "");
+      setReferenceYear(settings.reference_year || 2026);
+    }
+  }, [settings]);
 
-  const handleSave = async () => {
+  const handleSaveSystem = () => {
+    localStorage.setItem("GROQ_API_KEY", groqApiKey);
+    toast.success("Configurações do sistema salvas localmente!");
+  };
+
+  const handleSaveSpreadsheet = async () => {
     if (!settings?.id) return;
     try {
       await updateSettings.mutateAsync({
@@ -42,10 +47,9 @@ export default function SettingsPage() {
         service_account_json: serviceAccountJson,
         reference_year: referenceYear,
       });
-      localStorage.setItem("GROQ_API_KEY", groqApiKey);
-      toast.success("Configurações salvas!");
+      toast.success("Configurações da planilha salvas no banco!");
     } catch {
-      toast.error("Erro ao salvar.");
+      toast.error("Erro ao salvar no banco de dados.");
     }
   };
 
@@ -61,7 +65,7 @@ export default function SettingsPage() {
       toast.success("Conexão com a planilha funcionando!");
     } catch {
       setTestResult("error");
-      toast.error("Falha na conexão com a planilha.");
+      toast.error("Falha na conexão com a planilha. Verifique o ID e as permissões.");
     } finally {
       setIsTesting(false);
     }
@@ -79,78 +83,126 @@ export default function SettingsPage() {
 
   return (
     <Layout>
-      <div className="max-w-lg mx-auto">
-        <h1 className="text-2xl font-heading font-bold mb-6">Configurações</h1>
+      <div className="max-w-2xl mx-auto space-y-8 pb-10">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <ShieldCheck className="w-6 h-6 text-primary" />
+          </div>
+          <h1 className="text-3xl font-heading font-bold">Configurações</h1>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Google Planilhas</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="space-y-2">
-              <Label>ID da Planilha</Label>
-              <Input
-                placeholder="Ex: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
-                value={spreadsheetId}
-                onChange={(e) => setSpreadsheetId(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Extraído da URL: docs.google.com/spreadsheets/d/<strong>ID_AQUI</strong>/edit
-              </p>
+        {/* CONTAINER 1: SISTEMA */}
+        <Card className="border-primary/20 shadow-sm">
+          <CardHeader className="bg-primary/5">
+            <div className="flex items-center gap-2">
+              <Cpu className="w-5 h-5 text-primary" />
+              <CardTitle className="text-xl">Configurações do Sistema</CardTitle>
             </div>
-
+            <CardDescription>
+              Configurações locais e inteligência artificial (OCR)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-5">
             <div className="space-y-2">
-              <Label>Chave API do Groq (Acelera OCR)</Label>
+              <Label htmlFor="groq-key">Chave API do Groq (Acelera OCR)</Label>
               <Input
+                id="groq-key"
                 type="password"
                 placeholder="gsk_..."
                 value={groqApiKey}
                 onChange={(e) => setGroqApiKey(e.target.value)}
+                className="font-mono"
               />
-              <p className="text-xs text-muted-foreground">
-                Informe sua chave do Groq para ler notas sem erro.
+              <p className="text-xs text-muted-foreground italic">
+                A chave fica salva apenas no seu navegador, aumentando a segurança.
               </p>
             </div>
+            <Button onClick={handleSaveSystem} className="w-full sm:w-auto">
+              Salvar Sistema
+            </Button>
+          </CardContent>
+        </Card>
 
-            <div className="space-y-2">
-              <Label>Nome da Aba</Label>
-              <Input
-                value={sheetName}
-                onChange={(e) => setSheetName(e.target.value)}
-              />
+        {/* CONTAINER 2: PLANILHA */}
+        <Card className="border-indigo-200 shadow-sm">
+          <CardHeader className="bg-indigo-50/50">
+            <div className="flex items-center gap-2">
+              <Table className="w-5 h-5 text-indigo-600" />
+              <CardTitle className="text-xl">Google Planilhas</CardTitle>
+            </div>
+            <CardDescription>
+              Configure o destino da sincronização dos seus gastos
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2 lg:col-span-2">
+                <Label>ID da Planilha</Label>
+                <div className="flex gap-2">
+                   <div className="relative flex-1">
+                    <Database className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Ex: 1BxiMVs0XRA5nFMdKvBdBZjgm..."
+                      value={spreadsheetId}
+                      onChange={(e) => setSpreadsheetId(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground px-1">
+                  ID extraído da URL: docs.google.com/spreadsheets/d/<strong>ID_AQUI</strong>/edit
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Nome da Aba</Label>
+                <Input
+                  value={sheetName}
+                  onChange={(e) => setSheetName(e.target.value)}
+                  placeholder="Ex: Gastos 2026"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Ano de Referência</Label>
+                <Input
+                  type="number"
+                  value={referenceYear}
+                  onChange={(e) => setReferenceYear(Number(e.target.value))}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Ano de Referência</Label>
-              <Input
-                type="number"
-                value={referenceYear}
-                onChange={(e) => setReferenceYear(Number(e.target.value))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Service Account JSON</Label>
+              <Label>Service Account JSON (Google Cloud)</Label>
               <Textarea
                 rows={6}
                 placeholder='{"type": "service_account", ...}'
                 value={serviceAccountJson}
                 onChange={(e) => setServiceAccountJson(e.target.value)}
-                className="font-mono text-xs"
+                className="font-mono text-xs bg-muted/30"
               />
+              <p className="text-[10px] text-muted-foreground">
+                Dica: O e-mail da service account deve ter permissão de <strong>Editor</strong> na sua planilha.
+              </p>
             </div>
 
-            <div className="flex gap-3">
-              <Button onClick={handleSave} disabled={updateSettings.isPending}>
-                {updateSettings.isPending ? "Salvando..." : "Salvar"}
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 pt-4 border-t">
+              <Button onClick={handleSaveSpreadsheet} className="bg-indigo-600 hover:bg-indigo-700">
+                Salvar Planilha
               </Button>
-              <Button variant="outline" onClick={handleTest} disabled={isTesting}>
+              <Button 
+                variant="outline" 
+                onClick={handleTest} 
+                disabled={isTesting}
+                className="border-indigo-200"
+              >
                 {isTesting ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 ) : testResult === "success" ? (
-                  <CheckCircle className="w-4 h-4 mr-2 text-success" />
+                  <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
                 ) : testResult === "error" ? (
-                  <AlertCircle className="w-4 h-4 mr-2 text-destructive" />
+                  <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
                 ) : null}
                 Testar Conexão
               </Button>
